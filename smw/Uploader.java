@@ -285,9 +285,10 @@ public class Uploader {
 
     /**
      * Upload the category pages to the wiki.
+     * @param ArrayList of the titles of pages
      * @throws Exception if an error occurs.
      */
-    public void upload() throws Exception {
+    public void upload(List<String> titles) throws Exception {
 
         // Login
 
@@ -297,41 +298,20 @@ public class Uploader {
 
         getEditToken();
 
-        StringBuilder builder;
-
-        // Define the properties.
-	/*
-        for (Property property : category.getProperties()) {
-            edit("Property:" + property.getName(), property.propertyPageContent());
-            String commentName = property.getCommentName();
-            if (commentName != null) {
-                edit("Property:" + commentName, property.commentPropertyPageContent());
-            }
+        String content = "";
+        List<String> contentList = null;
+        Map<String, String> propertiesCalender = null;
+        // update on each title
+        for(String title : titles){
+        	// read the content of the page
+        	contentList  = readContent(title);
+        	// extract meeting information from content
+        	propertiesCalender = getMeetingInformation(contentList);
+        	// adding properties to calender
+        	getCalenderJson(propertiesCalender);
+        	content = addProperties(contentList, propertiesCalender);
+        	edit(title, content);
         }
-	*/
-        // Define the template.
-
-        builder = new StringBuilder();
-        category.template(builder);
-        edit("Template:" + category.getName(), builder.toString());
-
-        // Define the form.
-
-        builder = new StringBuilder();
-        category.form(builder);
-        edit("Form:" + category.getName(), builder.toString());
-
-        // Define the category.
-
-        builder = new StringBuilder();
-        category.category(builder);
-        edit("Category:" + category.getName(), builder.toString());
-
-        // Define the welcome page for the category.
-
-        builder = new StringBuilder();
-        category.welcome(builder);
-        edit(category.getName(), builder.toString());
     }
     
     /**
@@ -399,6 +379,28 @@ public class Uploader {
     	return null;
     }
     
+    /**
+	 * Purpose: Given a title of the webpage, returns the contents of the page 
+	 * @param String title
+	 * @return Content of the webpage: ArrayList<String>
+	 * @throws MalformedURLException, IOException
+	 * Usage: readPage("ConferenceCall 2012 04 05")
+	 */
+	public ArrayList<String> readPage(String title) throws MalformedURLException, IOException{
+		title = title.replaceAll("\\s+","%20");
+		String endpoint = "http://ontolog-test.cim3.net/wiki/"+title+"?"+"&action=raw";
+		URL url = new URL(endpoint);
+		URLConnection connection = url.openConnection();
+		BufferedReader reader  = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+		String line;
+		ArrayList<String> content = new ArrayList<String>();
+
+		while((line=reader.readLine())!=null)
+			content.add(line);
+		reader.close();
+		return content;
+	}
+    
     
     /**
      * Main program
@@ -417,8 +419,15 @@ public class Uploader {
             Uploader uploader = new Uploader(args[0], args[1], args[2]);
             uploader.readIntroduction(args[3]);
             uploader.readMetadata(args[4]);
-            uploader.upload();
-            uploader.pagesToModify();
+            
+            // changes
+            Map<String, String> pages = uploader.pagesToModify();
+            List<String> titles = new ArrayList<String>();
+            for(Map.Entry<String, String> page : pages.entrySet()){
+            	titles.add(page.getValue());
+            }
+            uploader.upload(titles);
+            
         } else {
             System.out.println("Using default values for the arguments.");
             Uploader uploader = new Uploader(null, null, null);
