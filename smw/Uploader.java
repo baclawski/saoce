@@ -136,83 +136,83 @@ public class Uploader {
         return null;
     }
 
-    /**
-         * Extract properties from the page 
-	      * (day of the meeting, time of the meeting, title of the meeting, etc.)
-	           * You can get following Properties : MeetingDate,MeetingTime,MeetingSubject 
-		        * @param lines - The response Text
-			     * @return Map containing property type and its value
-			          */
-				      public Map<String,String> getMeetingInformation(List<String> lines) {
-				          	Map<String,String> meetingProperties = new HashMap<String,String>();
-						    	StringBuilder builder = new StringBuilder();
-							    	for(String line:lines)
-								    		builder.append(line);
-										    	// Response text into String
-											    	String page = builder.toString();
-												    	
-													    	String meetingDate;
-														    	String time;
-															    	String subject;
-																    	
-																	    	
-																		    	String regexDay = "(Sunday|Monday|Tuesday|Wednesday|" +
-																							"Thursday|Friday|Saturday)";
-																									String regexMonth ="(January|February|March|April|May|June|July|" +
-																													"August|September|October|November|Decmber)";
-																															String regexDate ="([0-3]?[0-9])";
-																																	String regexYear = "([1-2][0-9][0-9][0-9])";
-																																			
-																																					// Regex to extract Day of meeting from a page
-																																							String regexDayOfMeeting =".*"+"Date: "+regexDay+", "+regexMonth+" "
-																																									+regexDate+", "+regexYear+".*";
-																																											Pattern pattern= Pattern.compile(regexDayOfMeeting);
-																																													Matcher matcher = pattern.matcher(page);
-																																															
-																																																	if(matcher.matches()){
-																																																				meetingDate=matcher.group(1)+" "+matcher.group(2)+" "+matcher.group(3)
-																																																									+" "+matcher.group(4);
-																																																											}
-																																																													else
-																																																																meetingDate="Meeting date not found";
-																																																																		 
-																																																																		 		
-																																																																						String regexTime= "([0-9]:[0-5][0-9]|[0-1][0-9]:[0-5][0-9])";
-																																																																								String regexTimeZone = "(GMT/)?UTC";
-																																																																										// Regex to extract time of meeting
-																																																																												String regexForTime = ".*?"+"Start Time:"+".*?"+regexTime+" "
-																																																																																+regexTimeZone+".*?";
-																																																																																		pattern=Pattern.compile(regexForTime);
-																																																																																				matcher=pattern.matcher(page);
-																																																																																						
-																																																																																								if(matcher.matches())
-																																																																																										{
-																																																																																													time=matcher.group(1)+ " UTC";
-																																																																																																System.out.println(time);
-																																																																																																		}
-																																																																																																				else
-																																																																																																							time="Time Not Found";
+	/**
+     * Extract properties from the page 
+     * (day of the meeting, time of the meeting, title of the meeting, etc.)
+     * You can get following Properties : MeetingDate,MeetingTime,MeetingSubject 
+     * @param lines - The response Text
+     * @return Map containing property type and its value
+     */
+    public Map<String,String> getMeetingInformation(List<String> lines) {
+    	Map<String,String> meetingProperties = new HashMap<String,String>();
+    	StringBuilder builder = new StringBuilder();
+    	for(String line:lines)
+    		builder.append(line);
+    	// Response text into String
+    	String page = builder.toString();
+    	
+    	String meetingDate;
+    	String time;
+    	String subject;
+    	
+    	
+    	String regexDay = "(Sunday|Monday|Tuesday|Wednesday|" +
+				"Thursday|Friday|Saturday)";
+		String regexMonth ="(January|February|March|April|May|June|July|" +
+				"August|September|October|November|Decmber)";
+		String regexDate ="([0-3]?[0-9])";
+		String regexYear = "([1-2][0-9][0-9][0-9])";
+		
+		// Regex to extract Day of meeting from a page
+		String regexDayOfMeeting =".*"+"Date: "+regexDay+", "+regexMonth+" "
+		+regexDate+", "+regexYear+".*";
+		Pattern pattern= Pattern.compile(regexDayOfMeeting);
+		Matcher matcher = pattern.matcher(page);
+		
+		if(matcher.matches()){
+			meetingDate=matcher.group(1)+" "+matcher.group(2)+" "+matcher.group(3)
+					+" "+matcher.group(4);
+		}
+		else
+			meetingDate="Meeting date not found";
+		 
+		
+		String regexTime= "([0-9]:[0-5][0-9]|[0-1][0-9]:[0-5][0-9])";
+		String regexTimeZone = "(GMT/)?UTC";
+		// Regex to extract time of meeting
+		String regexForTime = ".*?"+"Start Time:"+".*?"+regexTime+" "
+				+regexTimeZone+".*?";
+		pattern=Pattern.compile(regexForTime);
+		matcher=pattern.matcher(page);
+		
+		if(matcher.matches())
+		{
+			time=matcher.group(1)+ " UTC";
+			System.out.println(time);
+		}
+		else
+			time="Time Not Found";
 
-																																																																																																									// Regex to extract Meeting Title.
-																																																																																																											String regexForSubject=".*"+"Subject: "+"([^-]*)"+"-"+".*";
-																																																																																																													pattern=Pattern.compile(regexForSubject);
-																																																																																																															matcher=pattern.matcher(page);
-																																																																																																																	
-																																																																																																																			if(matcher.matches())
-																																																																																																																					{
-																																																																																																																								subject = matcher.group(1);
-																																																																																																																											System.out.println(subject);
-																																																																																																																													}
-																																																																																																																															else
-																																																																																																																																		subject = "Subject not found";
-																																																																																																																																		    	
-																																																																																																																																			    	meetingProperties.put("MeetingDate",meetingDate);
-																																																																																																																																				    	meetingProperties.put("MeetingTime",time);
-																																																																																																																																					    	meetingProperties.put("MeetingSubject",subject);
-																																																																																																																																						    	return meetingProperties;
-																																																																																																																																							    }
-
-    /**
+		// Regex to extract Meeting Title.
+		String regexForSubject=".*"+"Subject: "+"([^-]*)"+"-"+".*";
+		pattern=Pattern.compile(regexForSubject);
+		matcher=pattern.matcher(page);
+		
+		if(matcher.matches())
+		{
+			subject = matcher.group(1);
+			System.out.println(subject);
+		}
+		else
+			subject = "Subject not found";
+    	
+    	meetingProperties.put("MeetingDate",meetingDate);
+    	meetingProperties.put("MeetingTime",time);
+    	meetingProperties.put("MeetingSubject",subject);
+    	return meetingProperties;
+    }
+	
+   /**
      * Check the value of an attribute from a text response.
      * @param param The desired attribute name without the brackets.
      * @param lines The response text.
