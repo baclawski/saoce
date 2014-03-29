@@ -1,0 +1,71 @@
+public List<String> addProperties(List<String> pageContent,Map<String, String> propertiesCalender) {
+		
+		// 
+		pageContent.add("\n");
+    	 	
+		Iterator it = propertiesCalender.entrySet().iterator();
+		while (it.hasNext()) {
+			
+			
+			String porpertyString = "";			
+			Map.Entry pairs = (Map.Entry) it.next();
+			String key = pairs.getKey().toString();
+			String value =  pairs.getValue().toString();
+			if (key.equalsIgnoreCase("Attendees")){
+				String[] splited = value.split(" ");
+				for (int i = 0 ; i< splited.length; ++i) {
+					porpertyString += (key + "::" +  splited[i]);
+					pageContent.add(porpertyString);
+				}
+			} else {
+				porpertyString = key + "::" +  value;
+				pageContent.add(porpertyString);
+			}
+			
+		}
+
+		return pageContent;
+	}
+	
+	public String getCalenderJson(Map<String,String> properties) {
+		
+		Gson gson = new Gson();
+		Map<String,String> jsonProperties = new HashMap<String,String>();
+		jsonProperties.put("kind","calendar#event");
+		String date = null;
+		String startTime = null;
+		String endTime = null;
+		
+		Iterator it = properties.entrySet().iterator();
+		while (it.hasNext()) {
+			Map.Entry pairs = (Map.Entry) it.next();
+			String key = pairs.getKey().toString();
+			String value =  pairs.getValue().toString();
+			
+			if (key.equalsIgnoreCase("Subject")) {
+				jsonProperties.put("summary", pairs.getValue().toString());
+			} else if (key.equalsIgnoreCase("Agenda")){
+				continue;
+			}else if (key.equalsIgnoreCase("Date")){
+				date = value;
+			}else if (key.equalsIgnoreCase("Start Time")){
+				startTime = value;
+			}else if (key.equalsIgnoreCase("Duration")){
+				endTime = value;
+			}else if (key.equalsIgnoreCase("Dial-in Number")){
+				continue;
+			}else if (key.equalsIgnoreCase("Participant Access Code")){
+				continue;
+			}
+		}		
+		
+		if (date != null && startTime != null) {
+			jsonProperties.put("start", "{date:" + date + ",dateTime:" + startTime );
+		}
+		
+		if (date != null && endTime != null) {
+			jsonProperties.put("end", "{date:" + date + ",dateTime:" + endTime);
+		}
+		
+		return gson.toJson(jsonProperties);
+	}
