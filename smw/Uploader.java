@@ -1,9 +1,22 @@
 package smw;
 
+import java.io.ByteArrayInputStream;
 import java.io.FileReader;
 import java.io.BufferedReader;
 import java.util.Map;
 import java.util.HashMap;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.DocumentBuilder;
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
+import org.w3c.dom.Node;
+import org.w3c.dom.Element;
+import org.xml.sax.InputSource;
 
 /**
  * Upload a category to Semantic MediaWiki.
@@ -190,7 +203,7 @@ public class Uploader {
             String line = reader.readLine();
             if (line == null) break;
             if (line.isEmpty()) continue;
-            category.addEntry(line);
+           // category.addEntry(line);
         }
     }
 
@@ -244,7 +257,73 @@ public class Uploader {
         category.welcome(builder);
         edit(category.getName(), builder.toString());
     }
+    
+    /**
+     * Queries the api for pages that need to be modified
+     * @return
+     * Return id and titles of pages to be modified as key value
+     */
+    public Map<String, String> pagesToModify(){
+    	Map<String, String> map = new HashMap<String, String>();
+        map.put("action", "query");
+        map.put("list", "categorymembers");
+        map.put("cmtitle", "Category:Meeting");
+        map.put("cmsort", "timestamp");
+        map.put("cmdir", "desc");
+        map.put("format", "xml");
+        try {
+        	String[] response = multiform.sendForm(endpoint, "GET", new String[] { "action", "list", "cmtitle", "cmsort","cmdir","format" }, map);
+	        debug("Get modified pages response", response);
+	        if (response == null) {
+	            throw new Exception("Unable to get response for pages to be modified");
+	        }
+        return getPages(response);
+        } catch (Exception e) {
+        	System.out.println(e.getMessage());
+		}
+  	return null;
+  }
 
+    /**
+     * Parses the response for list of pages to be modified 
+     * @param response 
+     * Response as string array
+     * @return
+     * 
+     */
+    public Map<String, String> getPages(String[] response){
+    	HashMap<String,String> pagesMap = new HashMap<String,String>();
+    	DocumentBuilderFactory dbFactory = DocumentBuilderFactory
+		.newInstance();
+    	DocumentBuilder dBuilder;
+		try {
+			dBuilder = dbFactory.newDocumentBuilder();
+			if(response.length < 1 ){
+	    			throw new Exception("Modified pages response not in correct format");	
+	    	}
+			String xml  = response[0];
+			Document doc = dBuilder.parse(new InputSource(new ByteArrayInputStream(xml.getBytes("utf-8"))));  
+			doc.getDocumentElement().normalize();
+			NodeList nList = doc.getElementsByTagName("cm");
+			for (int temp = 0; temp < nList.getLength() && temp < 10; temp++) {
+				Node nNode = nList.item(temp);
+				if (nNode.getNodeType() == Node.ELEMENT_NODE) {
+					Element eElement = (Element) nNode;
+					String pageId = eElement.getAttribute("pageid");
+					String title = eElement.getAttribute("title");
+					pagesMap.put(pageId, title);
+				}
+			}
+			
+			return pagesMap;
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    
+    	return null;
+    }
+    
+    
     /**
      * Main program
      * @param args The command-line arguments.
@@ -263,11 +342,13 @@ public class Uploader {
             uploader.readIntroduction(args[3]);
             uploader.readMetadata(args[4]);
             uploader.upload();
+            uploader.pagesToModify();
         } else {
             System.out.println("Using default values for the arguments.");
             Uploader uploader = new Uploader(null, null, null);
             uploader.readMetadata("metadata.txt");
             uploader.upload();
+            uploader.pagesToModify();
         }
     }
 }
