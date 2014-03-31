@@ -152,15 +152,18 @@ public class Annotator {
      * Usage: readPage("ConferenceCall 2012 04 05")
      */
     public List<String> readContent(String title) throws MalformedURLException, IOException{
-	title = title.replaceAll("\\s+","%20");
-	String wikiEndpoint = endpoint.replaceAll("w/api.php", "wiki") + "/" + title + "?action=raw";
+	debug("Reading content of ", title);
+	title = title.replaceAll("\\s+","_");
+	String wikiEndpoint = endpoint.replaceAll("w/api.php", "w/index.php") + "?action=raw&title=" + title;
+	debug("wiki endpoint", wikiEndpoint);
 	URL url = new URL(endpoint);
 	URLConnection connection = url.openConnection();
 	BufferedReader reader  = new BufferedReader(new InputStreamReader(connection.getInputStream()));
 	String line;
 	ArrayList<String> content = new ArrayList<String>();
-	while((line=reader.readLine())!=null)
+	while((line=reader.readLine())!=null) {
 	    content.add(line);
+	}
 	reader.close();
 	return content;
     }
@@ -217,7 +220,6 @@ public class Annotator {
 		if(matcher.matches())
 		{
 			time=matcher.group(1)+ " UTC";
-			debug(time);
 		}
 		else
 			time="Time Not Found";
@@ -230,7 +232,6 @@ public class Annotator {
 		if(matcher.matches())
 		{
 			subject = matcher.group(1);
-			debug(subject);
 		}
 		else
 			subject = "Subject not found";
@@ -335,6 +336,11 @@ public class Annotator {
 
         getEditToken();
 
+	debug("annotating " + titles.size() + " titles");
+	if (titles.size() == 0) {
+	    titles.add("ConferenceCall_2009_01_15");
+	}
+
         // update on each title
         for(String title : titles){
 	    // read the content of the page
@@ -348,7 +354,10 @@ public class Annotator {
 	    for (String line : modifiedContentList) {
 		builder.append(line).append('\n');
 	    }
-	    edit (title, builder.toString());
+	    String content = builder.toString();
+	    int first = Math.min(content.length(), 80);
+	    System.out.println("edit on " + title + " " + content.substring(1, first));
+	    edit (title, content);
         }
     }
     
@@ -423,7 +432,7 @@ public class Annotator {
      */
     public ArrayList<String> readPage(String title) throws MalformedURLException, IOException{
 	title = title.replaceAll("\\s+","%20");
-	String endpoint = "http://ontolog-test.cim3.net/wiki/"+title+"?"+"&action=raw";
+	String endpoint = "http://ontolog-test.cim3.net/wiki/"+title+"?action=raw";
 	URL url = new URL(endpoint);
 	URLConnection connection = url.openConnection();
 	BufferedReader reader  = new BufferedReader(new InputStreamReader(connection.getInputStream()));
@@ -456,7 +465,6 @@ public class Annotator {
 		System.out.println(page.getValue());
             	titles.add(page.getValue());
             }
-	    System.exit(0);
             annotator.annotate(titles);
         }
     }
